@@ -1,0 +1,24 @@
+---
+icingaweb_packages:
+  - icingaweb2
+  - icingaweb2-module-monitoring
+  - libpq-dev
+  - nagios-plugins-extra
+  - nginx
+  - php5-cli
+  - php5-fpm
+  - php5-gd
+  - php5-imagick
+  - php5-intl
+  - php5-pgsql
+  - postgresql
+  - python-psycopg2
+
+location_of_php_ini: /etc/php5/fpm/php.ini
+
+nginx_fastcgi_params: fastcgi_params
+
+php_fpm_service_name: php5-fpm
+
+php_fpm_socket_path: /var/run/php5-fpm.sock
+

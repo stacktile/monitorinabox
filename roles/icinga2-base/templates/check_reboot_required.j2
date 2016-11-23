@@ -1,0 +1,204 @@
+#!/bin/bash
+#set -x
+#
+# {{ ansible_managed }}
+#
+# License: The BSD 3-Clause License
+#
+# Copyright (c) 2014, Johan Ryberg
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions are met:
+# 
+# 1. Redistributions of source code must retain the above copyright notice, 
+#  this list of conditions and the following disclaimer.
+# 
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#  this list of conditions and the following disclaimer in the documentation
+#  and/or other materials provided with the distribution.
+# 
+# 3. Neither the name of the copyright holder nor the names of its contributors
+#  may be used to endorse or promote products derived from this software without
+#  specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#  POSSIBILITY OF SUCH DAMAGE.
+#
+# check_reboot-required
+# Plugin for NRPE (Nagios Remote Plugin Executor) for Debian/Ubuntu to check
+# if a reboot are required and also list packages that requires reboot
+# Web: https://github.com/jryberg/nagios-plugins/
+
+APPNAME=`basename $0`
+VERSION="1.0"
+
+# Defining standard messages and exit error levels
+# https://nagios-plugins.org/doc/guidelines.html
+OK_EXIT_CODE=0
+WARNING_EXIT_CODE=1
+CRITICAL_EXIT_CODE=2
+UNKNOWN_EXIT_CODE=3
+OK_MSG="OK"
+WARNING_MSG="Warning"
+CRITICAL_MSG="Critical"
+UNKNOWN_MSG="Unknown"
+
+# Using Unknown as default
+EXIT_CODE=$UNKNOWN_EXIT_CODE
+EXIT_MSG=$UNKNOWN_MSG
+
+# Stupid warning and critical levels, this cannot be determined by numbers
+# some may want to have this anyway. Default will be a warning if a reboot
+# are required and never critical
+# -1 = disable service status
+WARNING_LEVEL=1
+CRITICAL_LEVEL=-1
+STATUS=w
+
+# Path to reboot-required
+REBOOT_REQUIRED_PATH="/var/run/reboot-required"
+REBOOT_REQUIRED_PKGS_PATH="/var/run/reboot-required.pkgs"
+
+# Function to explain how to use the program
+function_usage () {
+cat - <<EOF
+Usage: ${APPNAME} [--help]
+Usage: ${APPNAME} -d status [-w warn] [-c crit]
+
+This check command checks if a reboot are required after an upgrade. It will
+also list packages that requires a reboot to ease the decision for the
+sysadmin if/when a reboot needs to be carried out.
+
+WARNING: It's impossible by numbers to decide if a reboot are required by
+raising a "warning" or "critical" event. A patch for 0-day vulnerability
+will probably required immediate attention and less important updates can
+wait until next scheduled maintenance window. Please read documentation
+for each update.
+
+Default without any options will be Warning for 1 or more packages
+that requires reboot. Critical event will not be raised.
+
+ --help
+    Show this help
+ -V, --version
+    Show version
+ -s
+    Default service status when reboot are needed but package information
+    are missing. w=Warning, c=Critical
+ -w
+    Warning: Number of packages needing reboot as integer. Default: 1
+ -c
+    Critical: Number of packages needing reboot as integer. Disabled as default
+
+Example:
+${APPNAME} -s w
+
+EOF
+}
+
+# Process arguments
+while [ $# -gt 0 ]
+    do
+        OPT="$1"
+            case "${OPT}" in
+                --help)
+                    function_usage
+                    exit $OK_EXIT_CODE
+                ;;
+                -s)
+                    shift
+                    if [[ ${1} =~ ^[w|c]$ ]]; then
+                        STATUS="${1}"
+                    else
+                        echo "${APPNAME}: Service status must be w (Warning) or c (Critical)"
+                        exit $UNKNOWN_EXIT_CODE
+                    fi
+                    shift
+                ;;
+                -w)
+                    shift
+                    if [[ ${1} =~ ^[0-9]+$ ]]; then
+                        WARNING_LEVEL="${1}"
+                    else
+                        echo "${APPNAME}: Warning level must be positive integer"
+                        exit $UNKNOWN_EXIT_CODE
+                    fi
+                    shift
+                ;;
+                -c)
+                    shift
+                    if [[ ${1} =~ ^[0-9]+$ ]]; then
+                        CRITICAL_LEVEL="${1}"
+                    else
+                        echo "${APPNAME}: Critical level must be positive integer"
+                        exit $UNKNOWN_EXIT_CODE
+                    fi
+                    shift 
+                ;;
+                --version|-V)
+                    echo "${APPNAME} ${VERSION}"
+                    exit $OK_EXIT_CODE
+                ;;
+                *)
+                    echo "${APPNAME}: invalid option '${1}'"
+                    echo "Try '${APPNAME} --help' for more information."
+                    exit $UNKNOWN_EXIT_CODE
+                ;;
+    esac
+done
+
+if [ -z ${STATUS} ]; then
+    echo "${APPNAME}: -s Status argument are missing"
+    exit $UNKNOWN_EXIT_CODE
+fi
+
+if [ ! -f ${REBOOT_REQUIRED_PATH} ]; then
+    # Reboot not required
+    EXIT_MSG=$OK_MSG
+    EXIT_MSG_BODY="No reboot required|Packages=0;${WARNING_LEVEL//-1/};${CRITICAL_LEVEL//-1/};0"
+    EXIT_MSG_NR_PACKAGES=0
+    EXIT_CODE=$OK_EXIT_CODE
+else
+    # Reboot required
+    NR_OF_PACKAGES=0
+    if [ -f ${REBOOT_REQUIRED_PKGS_PATH} ]; then
+        NR_OF_PACKAGES=`wc -l ${REBOOT_REQUIRED_PKGS_PATH} | awk '{ print $1 }'`
+    fi
+
+    if [ ${NR_OF_PACKAGES} -gt 0 ]; then
+        if [ ${NR_OF_PACKAGES} -ge ${CRITICAL_LEVEL} ] && [ ${CRITICAL_LEVEL} -ne "-1" ];then
+            EXIT_MSG=$CRITICAL_MSG
+            EXIT_CODE=$CRITICAL_EXIT_CODE
+        elif [ ${NR_OF_PACKAGES} -ge ${WARNING_LEVEL} ] && [ ${WARNING_LEVEL} -ne "-1" ];then
+            EXIT_MSG=$WARNING_MSG
+            EXIT_CODE=$WARNING_EXIT_CODE
+        else
+            EXIT_MSG=$OK_MSG
+            EXIT_CODE=$OK_EXIT_CODE
+        fi
+        EXIT_MSG_BODY="`cat ${REBOOT_REQUIRED_PATH}`<br/>Packages:<br/>`cat ${REBOOT_REQUIRED_PKGS_PATH} | sed ':a;N;$!ba;s/\n/<br\/>/g'`|Packages=${NR_OF_PACKAGES};${WARNING_LEVEL//-1/};${CRITICAL_LEVEL//-1/};0"
+    else
+        if [[ ${STATUS} = "w" ]]; then
+            EXIT_MSG=$WARNING_MSG
+            EXIT_CODE=$WARNING_EXIT_CODE
+        else
+            EXIT_MSG=$CRITICAL_MSG
+            EXIT_CODE=$CRITICAL_EXIT_CODE
+        fi
+        EXIT_MSG_BODY="`cat ${REBOOT_REQUIRED_PATH}`|Packages=U;${WARNING_LEVEL//-1/};${CRITICAL_LEVEL//-1/};0"
+    fi
+fi
+
+# Echo message and exit
+echo "${EXIT_MSG}: ${EXIT_MSG_BODY}"
+exit $EXIT_CODE

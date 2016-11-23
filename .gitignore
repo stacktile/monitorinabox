@@ -1,0 +1,23 @@
+credentials
+vault.yml
+
+*.pyc
+
+**.key
+**.crt
+**.pem
+
+# ignore vim swap files
+*.swp
+
+# temporary files created by playbook-challenge-update-step-2-provision-new-vm.yml
+inventories/new-challenge
+panopticon
+netunit.dump
+
+# temporary files created by ansible
+*.retry
+
+# Files created by vagrant
+.vagrant
+ubuntu-xenial-16.04-cloudimg-console.log

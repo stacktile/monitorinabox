@@ -1,0 +1,5 @@
+---
+
+common_nginx_packages:
+  - apache2-utils
+  - nginx

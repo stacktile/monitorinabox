@@ -1,0 +1,156 @@
+# {{ ansible_managed }}
+
+#-------------------------------------------------------------------------------
+## Prompt Configurations
+#-------------------------------------------------------------------------------
+#PS1=$'%{\e[1;%(!.31.32)m%}%m%{\e[01;34m%} %15<...<%~%(!.#.>>)%{\e[00m%}'
+#RPS1=$'%F{green}%B%K{green}█▓▒░%F{white}%K{green}%B%m%b%F{green}%K{black}█▓▒░%F{white}%K{black}%B'
+#PS0=$'%F{yellow}%B%K{yellow}█▓▒░%F{white}%K{yellow}%B%m%b%F{red}%K{black}█▓▒░%F{yellow}%K{black}%B'
+PROMPT="%(?.%F{blue}.%F{red})❯%(?.%F{green}.%F{magenta})❯%f "
+RPS1="%(?.%F{green}.%F{magenta})❮ %B[%n@%m]%b %~%f"
+
+
+#-------------------------------------------------------------------------------
+## ZSH Specific Configuration
+#-------------------------------------------------------------------------------
+autoload -U compinit promptinit
+autoload -U colors && colors
+compinit
+promptinit
+
+## ZSH Style
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' completer _oldlist _expand _force_rehash _complete
+zstyle ':completion:*' group-name
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*:(jobs|disown|bg|fg|kill):*' menu yes select
+zstyle ':completion:*:(rm|kill|diff|vimdiff):*' ignore-line yes
+zstyle ':completion:*:*:*' hosts $ssh_config_hosts
+zstyle ':completion:*:descriptions' format '%U%B%d%b%u'
+zstyle ':completion:*:messages' format '%d'
+zstyle ':completion:*:processes-names' command  'ps c -u ${USER} -o command | uniq'
+zstyle ':completion:*:warnings' format '%BSorry, no matches for: %d%b'
+
+## vi bindkeys
+bindkey -M viins '^r' history-incremental-search-backward
+bindkey -M viins '^a' beginning-of-line
+bindkey -M viins '^e' end-of-line
+bindkey -M viins '^ ' vi-cmd-mode
+bindkey -M viins '^i' expand-or-complete-prefix
+bindkey -M viins '^p' copy-prev-word
+bindkey -M viins '^o' copy-prev-shell-word
+
+## ZSH Options
+setopt vi
+setopt correct_all
+setopt hist_ignore_space	# Exclude space-prefixed from history
+setopt hist_ignore_all_dups
+setopt extended_history
+setopt inc_append_history
+#setopt share_history
+setopt autocd
+setopt auto_pushd
+setopt pushd_ignore_dups
+setopt extendedglob
+setopt hash_cmds
+setopt interactive_comments #
+setopt nobgnice				# Do not nice background processes
+setopt noclobber 			# Prevent accidental "cat /dev/null >~/.zshrc"
+
+#-------------------------------------------------------------------------------
+## Alias Definitions
+#-------------------------------------------------------------------------------
+alias ls="ls --color=auto"
+alias ll="ls -l --color=auto"
+alias lS="ls -lSr --color=auto"
+alias lll="ls -l --color=auto | less"
+alias lR="ls -lR --color=auto"
+alias lX="ls -lX --color=auto"
+alias la="ls -la --color=auto"
+alias le="ls -le --color=auto"
+alias lh="ls -lh --color=auto"
+alias lhS="ls -lhSr --color=auto"
+alias li="ls -li --color=auto"
+alias lt="ls -ltcr  --color=auto"
+alias todos='showtodos'
+alias today='task due:today'
+
+alias tma='tmux attach -d -t'
+
+alias ga='git add'
+alias gb='git branch'
+alias gc='git commit'
+alias gcl='git clone'
+alias gd='git diff'
+alias gdw='git diff --color-words'
+alias glg='git log --decorate --pretty=oneline'
+alias gpl='git pull'
+alias gpu='git push'
+alias gra='git remote add'
+alias grr='git remote rm'
+alias gst='git status'
+alias gw='git whathappened'
+
+alias apb="ansible-playbook"
+alias nol="nova list"
+alias ost="openstack"
+alias osl="openstack server list"
+alias hsl="heat stack-list"
+
+ZSHTOKENDIR=${HOME}/.zsh
+TOKEN_AUTOTMUX=$ZSHTOKENDIR/token-autotmux
+
+#-------------------------------------------------------------------------------
+## Environment Variables
+#-------------------------------------------------------------------------------
+export VISUAL=vim
+export EDITOR=vim
+export TERM=xterm-256color
+export HISTSIZE=50000
+export HISTFILE="$HOME/.history"
+export SAVEHIST=$HISTSIZE
+export NOTESFILE="$HOME/.NOTES"
+export SPROMPT="Correct %B$fg[red]%R$reset_color%b to %B$fg[green]%r?$reset_color%b (Yes, No, Abort, Edit) "
+
+
+#-------------------------------------------------------------------------------
+## Functions
+#-------------------------------------------------------------------------------
+
+_force_rehash()
+{
+  (( CURRENT == 1 )) && rehash;
+  return 1;	# Because we didn't really complete anything
+}
+
+
+
+#-------------------------------------------------------------------------------
+# Show IP Tables in a nice way
+#-------------------------------------------------------------------------------
+shit()
+{
+if [[ -z "$(which sudo)" || "$UID" == "0" ]]; then
+	SUDO=""
+else
+	SUDO="sudo"
+fi
+
+echo "$(for i in filter nat mangle; \
+		do echo -e \\n======================\ IPv4 $i\ ================================\\n; \
+		$SUDO /sbin/iptables -nvL -t $i --line; done;
+		if [[ -e $(which ip6tables) ]]; then
+		for i in filter mangle raw; \
+		do echo -e \\n======================\ IPv6 $i\ ================================\\n; \
+		$SUDO /sbin/ip6tables -nvL -t $i --line ; done;
+		fi)" | less
+}
+
+
+#-------------------------------------------------------------------------------
+# Show listening sockets in a nice way
+#-------------------------------------------------------------------------------
+nut()
+{
+netstat -pltun | sort -k 3,3 -n #| awk '{printf "%s\t%s\t\t%s\t%s\n",$1,$4,$5,$7}'
+}

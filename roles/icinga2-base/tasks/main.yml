@@ -1,0 +1,82 @@
+---
+# icinga2-base/tasks/main.yml: Installs the icinga2 components shared across all icinga2 installations
+
+- name: Include {{ ansible_distribution }} specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  tags: vars
+
+
+- name: Install apt_repository ansible module dependencies
+  apt: name=python-apt state=latest update_cache=yes cache_valid_time=3600
+  when: ansible_os_family == 'Debian'
+
+- name: Add icinga package repository on Ubuntu systems
+  apt_repository: repo='ppa:formorer/icinga'
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install required packages on Ubuntu
+  apt: name={{ item }} state=latest install_recommends=no update_cache=yes
+  with_items:
+    - icinga2
+    - nagios-plugins-extra
+    - openssl
+  notify:
+    - restart icinga2
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Add icinga repository key on Debian
+  apt_key: url=https://debmon.org/debmon/repo.key state=present
+  when: ansible_distribution == 'Debian'
+
+- name: Add icinga package repository on Debian Wheezy
+  apt_repository: repo='deb http://debmon.org/debmon debmon-wheezy main'
+  when: ansible_distribution == 'Debian' and ansible_distribution_major_version == '7'
+
+- name: Add icinga package repository on Debian Jessie
+  apt_repository: repo='deb http://debmon.org/debmon debmon-jessie main'
+  when: ansible_distribution == 'Debian' and ansible_distribution_major_version == '8'
+
+- name: Install required packages on Debian
+  apt: name={{ item }} state=latest install_recommends=no update_cache=yes
+  with_items:
+    - icinga2
+    - nagios-plugins-standard
+    - openssl
+  notify:
+    - restart icinga2
+  when: ansible_distribution == 'Debian'
+
+- name: Ensure the EPEL repository is present
+  yum: name=epel-release state=present
+  when: ansible_os_family == 'RedHat'
+
+- name: Ensure the EPEL repository GPG key is imported
+  rpm_key: key=/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7 state=present
+  when: ansible_os_family == 'RedHat'
+
+- name: Add icinga package repository on RedHat systems
+  yum: name=https://packages.icinga.org/epel/7/release/noarch/icinga-rpm-release-7-1.el7.centos.noarch.rpm state=present update_cache=yes
+  when: ansible_os_family == 'RedHat'
+
+- name: Install required packages on RedHat
+  yum: name={{ item }} state=latest update_cache=yes
+  with_items:
+    - icinga2
+    - nagios-plugins-all
+    - openssl
+  notify:
+    - restart icinga2
+  when: ansible_os_family == 'RedHat'
+
+- name: Include custom icinga2 users, templates, and checks
+  include: custom_config.yml
+  notify:
+   - restart icinga2
+
+# Safety precaution that ensures that all handlers are triggered in the event
+# that a task fails and the handlers are then lost.
+- meta: flush_handlers

@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+system('chmod 600 id_rsa_example__do_not_use_in_production__')
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "ubuntu/trusty64"
+
+  config.vm.define "mib_master" do |mib_master|
+      mib_master.vm.network :private_network, ip: "192.168.33.10"
+
+      mib_master.vm.provider :virtualbox do |vb|
+        vb.name = "mib-master-ubuntu-14.04"
+      end
+
+      mib_master.vm.provision "shell", :inline => <<-SHELL
+        echo "192.168.33.11 mibsatellite.your.company" >> /etc/hosts
+      SHELL
+  end
+
+  config.vm.define "mib_satellite" do |mib_satellite|
+      mib_satellite.vm.network :private_network, ip: "192.168.33.11"
+
+      mib_satellite.vm.provider :virtualbox do |vb|
+        vb.name = "mib-satellite-ubuntu-14.04"
+      end
+
+      mib_satellite.vm.provision "shell", :inline => <<-SHELL
+        echo "192.168.33.10 mibmaster.your.company" >> /etc/hosts
+      SHELL
+  end
+
+  config.vm.provision "shell", :inline => <<-SHELL
+    apt-get update
+    apt-get install -y python
+    sed -i 's/root.*/root::17114:0:99999:7:::/' /etc/shadow
+    sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+    sed -i 's/PermitEmptyPasswords.*/PermitEmptyPasswords yes/' /etc/ssh/sshd_config
+    sed -i 's/nullok.*/nullok/' /etc/pam.d/common-auth
+    service ssh restart
+    cat /vagrant/id_rsa_example__do_not_use_in_production__.pub > /root/.ssh/authorized_keys
+  SHELL
+
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "512", "--cpus", "1"]
+  end
+end

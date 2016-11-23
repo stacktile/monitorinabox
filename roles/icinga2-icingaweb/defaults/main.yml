@@ -1,0 +1,24 @@
+---
+# defaults/main.yml: Defaults for icinga2-icingaweb
+
+icinga_db_name: "icinga"
+icinga_db_user: "icinga"
+icinga_db_password: "{{ lookup('password', 'credentials/icinga_db_user' + ' length=30 chars=ascii_letters,digits') }}"
+
+# The fully-qualified domain name under which icingaweb is reached from the browser
+icingaweb_service_host: icinga-{{ ansible_fqdn }}
+
+icingaweb_service_host_ssl_crt_path: /etc/ssl/icinga.crt
+icingaweb_service_host_ssl_key_path: /etc/ssl/icinga.key
+
+icingaweb_service_htaccess_file:  /etc/nginx/icingaweb.htpasswd
+icingaweb_service_htaccess_users:
+  admin:
+    password: "{{ lookup('password', 'credentials/icingaweb_admin length=30 chars=ascii_letters,digits') }}"
+
+icingaweb_db_name: "icingaweb"
+icingaweb_db_user: "icingaweb"
+icingaweb_db_password: "{{ lookup('password', 'credentials/icingaweb_db_user' + ' length=30 chars=ascii_letters,digits') }}"
+
+icingaweb_admin_user: "admin"
+icingaweb_admin_password: "{{ lookup('password', 'credentials/icingaweb_admin_user' + ' length=30 chars=ascii_letters,digits') }}"

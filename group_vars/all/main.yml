@@ -1,0 +1,5 @@
+---
+# group_vars/all/main.yml: variables that apply to all host groups
+
+admin_email:
+  - admin@yourcompany.com

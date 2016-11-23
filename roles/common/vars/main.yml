@@ -1,0 +1,5 @@
+---
+
+# The following keys will be placed into AND replace any existng contents in /root/.ssh/authorized_keys 
+#ssh_root_user_public_keys: 
+# - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDDGDLDnjDUzW5yEGfVGGrI/.....

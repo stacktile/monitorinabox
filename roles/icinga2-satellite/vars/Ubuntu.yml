@@ -1,0 +1,3 @@
+---
+icinga2_system_user: nagios
+icinga2_system_group: "{{ icinga2_system_user }}"

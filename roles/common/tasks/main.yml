@@ -1,0 +1,100 @@
+---
+# common/tasks/main.yml: Main tasks for common role
+
+- name: Include {{ ansible_distribution }} specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  tags: vars
+
+- name: Set the system hostname
+  hostname: name={{ inventory_hostname_short }}
+
+- name: Configure system hosts file
+  lineinfile: dest=/etc/hosts
+              regexp="^127\.0\.0\.1"
+              line='127.0.0.1 {{inventory_hostname}} {{inventory_hostname_short}} localhost'
+              owner=root group=root mode=0644
+  async: 15
+  poll: 0
+
+- name: Configure sshd to disable password authentication
+  lineinfile: dest=/etc/ssh/sshd_config
+              regexp='^[#]?PasswordAuthentication'
+              line='PasswordAuthentication no'
+              owner=root group=root mode=0644
+  async: 15
+  poll: 0
+  tags: ssh-rekey
+
+- name: Configure sshd to disable challenge authentication
+  lineinfile: dest=/etc/ssh/sshd_config
+              regexp='^[#]?ChallengeResponseAuthentication'
+              line='ChallengeResponseAuthentication no'
+              owner=root group=root mode=0644
+  async: 15
+  poll: 0
+  tags: ssh-rekey
+
+- name: Place admin ssh public keys in root authorized_keys
+  authorized_key: user=root exclusive=True key={{ ssh_root_user_public_keys | join('\n') }}
+  notify: sshd
+  tags: ssh-rekey
+  ignore_errors: true
+  
+- name: Enable EPEL on RedHat
+  package: name=epel-release state=installed
+  when: ansible_os_family == "RedHat"
+
+- stat: path=/etc/ferm/ferm.conf
+  register: has_ferm
+  changed_when: false
+
+- debug: var=has_ferm
+
+- name: Install Common Packages
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  apt: name={{ item }} state=installed update_cache=yes cache_valid_time=3600
+  with_items: "{{ common_packages }}"
+
+
+#################  Optional Nice-to-Haves  #####################################
+- name: Change root shell to zsh
+  user: name=root shell=/usr/bin/zsh
+
+- name: Configure zshrc for root user
+  template: src=zshrc.j2 dest=/root/.zshrc
+
+- name: Configure tmux for root user
+  action: template src=tmux.conf.j2 dest=/root/.tmux.conf
+
+- name: Remove the default aws/openstack ubuntu user
+  user: name=ubuntu state=absent remove=yes
+  async: 15
+  poll: 0
+  ignore_errors: yes
+
+- name: Configure etckeeper
+  action: template src=etckeeper.conf.j2 dest=/etc/etckeeper/etckeeper.conf
+
+- name: Create gitconfig for root user so that etckeeper can commit 
+  template: src=gitconfig.j2 dest=/root/.gitconfig
+
+# This command should bail out as soon as it detects an initialized etckeeper.
+- name: Make etckeeper initial commit if not already initialized
+  command: /usr/bin/etckeeper init
+  ignore_errors: yes
+
+- name: Configure Ferm
+  template: src=ferm.conf.j2 dest=/etc/ferm/ferm.conf
+  notify: ferm
+  when: force_fermconfig is defined and force_fermconfig == true or has_ferm.stat.exists == false
+
+- name: Enable Unattended Upgrades
+  template: src=unattended_upgrades.conf.j2 dest=/etc/apt/apt.conf.d/10periodic
+
+# Ensures that all handlers are triggered
+- meta: flush_handlers

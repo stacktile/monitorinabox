@@ -1,0 +1,11 @@
+---
+
+base_packages:               
+  - icingaweb2                    
+  - icingaweb2-module-monitoring  
+  - libpq-dev                     
+  - nagios-plugins-extra          
+  - nginx                         
+  - php5-cli                      
+
+icinga2_plugin_dir: /usr/lib/nagios/plugins

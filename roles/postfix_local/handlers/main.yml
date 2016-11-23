@@ -1,0 +1,7 @@
+---
+# handlers file for icinga2-hosts
+
+- name: restart postfix
+  service: name=postfix
+           state=restarted
+           enabled=yes

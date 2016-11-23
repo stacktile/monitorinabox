@@ -1,0 +1,2 @@
+out_of_band_smtp_server_address: "mail.gmx.net"
+out_of_band_smtp_server_port: 465

@@ -1,0 +1,28 @@
+---
+# Configures icinga2
+
+- name: Smartinclude 
+  include: ../../common/tasks/smartinclude.yml
+  tags: always
+
+- name: Copy configuration files to host that don't need templating
+  synchronize: src=icingaweb/ dest=/etc/icingaweb2
+
+- name: Install resources.ini configuration template
+  template: src=icingaweb/resources.ini.j2
+            dest=/etc/icingaweb2/resources.ini
+
+- name: Create enabledModules directory
+  file: path="/etc/icingaweb2/enabledModules" state=directory
+
+- name: Enable monitoring module
+  file: src=/usr/share/icingaweb2/modules/monitoring
+        dest=/etc/icingaweb2/enabledModules/monitoring
+        state=link
+
+- name: Set owner and group of configuration files
+  file: path=/etc/icingaweb2
+        state=directory
+        recurse=yes
+        owner=www-data
+        group=icingaweb2

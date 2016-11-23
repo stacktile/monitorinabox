@@ -1,0 +1,73 @@
+---
+# icinga2-icingaweb/tasks/main.yml
+
+- name: Smartinclude
+  include: ../../common/tasks/smartinclude.yml
+  tags: always
+
+- name: Install apt_repository ansible module dependencies
+  apt: name=python-apt state=latest update_cache=yes cache_valid_time=3600
+  when: ansible_pkg_mgr == "apt"
+
+- name: Add icinga package repository key
+  apt_repository: repo='ppa:formorer/icinga'
+  when: ansible_pkg_mgr == "apt"
+
+- name: Blacklist apache2 which is otherwise pulled as a dependency of icingaweb2 on {{ ansible_distribution }}
+  command: /usr/bin/apt-mark hold apache2 apache2-bin apache2-data
+  when: ansible_pkg_mgr == "apt"
+
+- name: Install icingaweb for Ubuntu
+  apt: name={{ item }} state=latest install_recommends=no update_cache=yes cache_valid_time=3600
+  with_items: "{{ icingaweb_packages }}"
+  notify:
+    - php-fpm
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install icingaweb for RedHat
+  yum: name={{ item }} state=latest update_cache=yes
+  with_items: "{{ icingaweb_packages }}"
+  notify:
+    - php-fpm
+  when: ansible_os_family == "RedHat"
+
+
+- name: Set Timezone in php.ini config file
+  ini_file:
+    dest:  "{{ location_of_php_ini }}"
+    section: "Date"
+    option: "date.timezone"
+    value: "UTC"
+  notify:
+    - php-fpm
+
+- name: Set address on which to accept FastCGI requests
+  ini_file:
+    dest: /etc/php-fpm.d/www.conf
+    section: "www"
+    option: "listen"
+    value: "/var/run/php5-fpm.sock"
+  notify:
+    - php-fpm
+  when: ansible_os_family == "RedHat"
+
+- include: database.yml
+  tags:
+    - database
+
+- include: icinga2_nginx.yml
+  tags:
+    - icinga2_nginx
+
+- include: icingaweb_config.yml
+  tags:
+    - icingaweb_config
+
+- name: Relax firewall for (nginx) icinga
+  template: src=ferm.conf.j2 dest={{ ferm_config_file }}
+  notify:
+   - ferm
+
+# Safety precaution that ensures that all handlers are triggered in the event
+# that a task fails and the handlers are then lost.
+- meta: flush_handlers

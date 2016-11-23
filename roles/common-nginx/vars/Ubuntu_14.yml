@@ -1,0 +1,7 @@
+---
+
+common_nginx_packages:
+  - apache2-utils
+  - nginx
+
+ssl-cert-snakeoil-file-group: root

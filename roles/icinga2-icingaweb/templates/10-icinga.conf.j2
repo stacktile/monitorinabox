@@ -1,0 +1,49 @@
+# {{ ansible_managed }}
+
+server {
+    listen 80;
+    server_name {{ icingaweb_application_fqdn }};
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+
+}
+
+server {
+    listen 443 ssl;
+    server_name {{ icingaweb_application_fqdn }};
+
+
+    ssl_certificate /etc/ssl/{{ icingaweb_application_fqdn }}.crt;
+    ssl_certificate_key /etc/ssl/{{ icingaweb_application_fqdn }}.key;
+
+    {% if ssl_client_certificate is defined %}
+    ssl_client_certificate  {{ ssl_client_certificate }};
+    ssl_verify_client on;
+    {% endif %}
+
+    #FIXME: basic auth and generate pw on privision
+
+    root /usr/share/icingaweb2/public;
+    index index.php;
+
+    include /etc/nginx/conf.d/grafana.include;
+
+    location /index.php {
+      fastcgi_index index.php;
+      fastcgi_pass unix:{{ php_fpm_socket_path }};
+      include {{ nginx_fastcgi_params }};
+      # Uncomment these if icinga2 is being run under a different url
+      # path (e.g. https://domain.com/different/url/path/
+      #fastcgi_param SCRIPT_FILENAME /usr/share/icingaweb2/public/index.php;
+      #fastcgi_param ICINGAWEB_CONFIGDIR /etc/icingaweb2;
+      #fastcgi_param REMOTE_USER $remote_user;
+
+    }
+
+    location / {
+      index index.php;
+      try_files $uri $uri/ /index.php$is_args$args;
+    }
+}

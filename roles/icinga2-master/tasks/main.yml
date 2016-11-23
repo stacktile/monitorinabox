@@ -1,0 +1,33 @@
+---
+# icinga2-master/tasks/main.yml
+
+- name: Include {{ ansible_distribution }} specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  tags: vars
+
+
+- name: Setup the icinga master CA and SSL certificates
+  include: icinga_master_ca.yml
+  tags:
+    - icinga_master_ca
+
+- name: Setup icinga node as master
+  command: icinga2 node setup --master
+  notify:
+    - restart icinga2
+
+- name: Enable command feature of icinga2 [for icingaweb]
+  file: path=/etc/icinga2/features-enabled/command.conf
+        src=/etc/icinga2/features-available/command.conf
+        state=link
+  notify:
+    - restart icinga2
+ 
+- name: restart icinga2 on the master node
+  service: name=icinga2 state=restarted
+
+- meta: flush_handlers

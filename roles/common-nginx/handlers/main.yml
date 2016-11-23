@@ -1,0 +1,6 @@
+---
+- name: ferm
+  service: name=ferm state=restarted enabled=true
+
+- name: nginx
+  service: name=nginx state=restarted enabled=true

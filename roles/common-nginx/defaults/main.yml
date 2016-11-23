@@ -1,0 +1,6 @@
+---
+
+nginx_enable_hsts: True
+
+#In production, the hsts max-age header should have the value: 31536000
+nginx_hsts_header_max_age: 300

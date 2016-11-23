@@ -1,0 +1,115 @@
+---
+# This playbook contains common plays that will be run on all nodes which have
+# nginx installed.
+
+- name: Include {{ ansible_os_family }} specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  tags: vars
+
+- name: Install Common Packages
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  package: name={{ item }} state=installed
+  with_items: "{{ common_nginx_packages }}"
+
+- name: Create nginx user www-data
+  user: name=www-data
+        createhome=no
+
+- name: Create nginx sites-available and sites-enabled directories
+  file: path={{ item }}
+        state=directory
+        owner=root
+        group=root
+        mode=755
+  with_items:
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+
+############ Factor out into SSL keys + Certs yml
+- name: Create secure diffie-hellman parameters
+  command: openssl dhparam -out /etc/ssl/dhparam.pem 2048
+  async: 450
+  poll: 30
+  args:
+    creates: /etc/ssl/dhparam.pem
+
+
+############ Factor out into SSL keys + Certs yml
+- name: Remove default nginx site configuration
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  notify: nginx
+
+- name: Apply more secure nginx ssl config
+  template: src=ssl.conf.j2 dest=/etc/nginx/conf.d/ssl.conf mode=640 owner=root
+  notify: nginx
+
+- name: Install nginx catch-all for invalid virtual servers
+  template: src=05-no-ip-virtual-hosts.conf.j2
+            dest=/etc/nginx/sites-available/05-no-ip-virtual-hosts.conf
+  notify: nginx
+
+- name: Enable nginx catch-all for invalid virtual servers
+  file: src=/etc/nginx/sites-available/05-no-ip-virtual-hosts.conf
+        dest=/etc/nginx/sites-enabled/05-no-ip-virtual-hosts.conf
+        state=link
+  notify: nginx
+
+- name: Install ssl certificate
+  copy: content={{ ssl_crt }}
+        dest={{ ssl_crt_filepath }}
+        owner=root
+        group=root
+        mode=0444
+  when: ssl_crt is defined and ssl_crt_filepath is defined
+  notify: nginx
+
+- name: Install ssl key
+  copy: content={{ ssl_key }}
+        dest={{ ssl_key_filepath }}
+        owner=root
+        group=root
+        mode=0400
+  when: ssl_key is defined and ssl_key_filepath is defined
+  notify: nginx
+
+- name: Ensure SSL snakeoil certs exist (for nginx boostrapping)
+  shell: >-
+    openssl req -x509 -newkey rsa:2048 -nodes
+    -subj "/CN=snakeoil/C=NA/ST=NA/L=NA/O=NA/OU=NA"
+    -keyout /etc/ssl/private/ssl-cert-snakeoil.key
+    -out /etc/ssl/certs/ssl-cert-snakeoil.pem
+    -days 3650
+  args:
+    creates: /etc/ssl/private/ssl-cert-snakeoil.key
+
+- name: Set correct permissions on ssl-cert-snakeoil.key
+  file: path=/etc/ssl/private/ssl-cert-snakeoil.key
+        owner=root
+        group=root
+        mode=440
+
+- name: Place Snakeoil SSL certificate in /etc/ssl
+  file: src=/etc/ssl/certs/ssl-cert-snakeoil.pem
+        dest=/etc/ssl/{{ inventory_hostname }}.crt
+        state=link
+  when: ssl_key is undefined
+
+- name: Place Snakeoil SSL private key in /etc/ssl
+  file: src=/etc/ssl/private/ssl-cert-snakeoil.key
+        dest=/etc/ssl/{{ inventory_hostname }}.key
+        state=link
+  when: ssl_key is undefined
+
+- name: Configure Ferm
+  template: src=ferm.conf.j2 dest=/etc/ferm/ferm.conf
+  notify: ferm
+
+
+# Safety precaution that ensures that all handlers are triggered in the event
+# that a task fails and the handlers are then lost.
+- meta: flush_handlers

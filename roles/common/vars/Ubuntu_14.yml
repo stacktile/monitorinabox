@@ -1,0 +1,31 @@
+---
+common_packages:
+  - bash-completion
+  - dstat
+  - etckeeper
+  - ferm
+  - git
+  - htop
+  - iftop
+  - iotop
+  - lsof
+  - molly-guard
+  - mtr
+  - nano
+  - ncdu
+  - net-tools
+  - ntp
+  - ntpdate
+  - psmisc
+  - rsync
+  - strace
+  - silversearcher-ag
+  - tmux
+  - unattended-upgrades
+  - vim
+  - zsh
+  - zsh-lovers
+
+ferm_config_dest: /etc/ferm/ferm.conf
+
+sshd_service_name: ssh

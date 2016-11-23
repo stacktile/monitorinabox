@@ -1,0 +1,63 @@
+---
+
+# Configures an icinga master
+
+#### Managed Hosts
+- name: Clear out existing managed hosts config state
+  file: path={{ icinga2_managed_config_dir }}/hosts
+        state=absent
+
+- name: Ensure that icinga managed hosts config directory exists
+  file: path={{ icinga2_managed_config_dir }}/hosts
+        state=directory
+
+- name: Copy Host Definitions
+  template: src={{ item }}
+            dest={{ icinga2_managed_config_dir }}/hosts
+            owner=root 
+            group=root 
+            mode=0644
+  with_fileglob:
+    - hosts/*
+  notify: 
+   - restart icinga2
+
+#### Managed Hosts
+- name: Clear out existing managed service config state
+  file: path={{ icinga2_managed_config_dir }}/services
+        state=absent
+
+- name: Ensure that icinga managed hosts config directory exists
+  file: path={{ icinga2_managed_config_dir }}/services
+        state=directory
+
+- name: Copy Host Definitions
+  template: src={{ item }}
+            dest={{ icinga2_managed_config_dir }}/services
+            owner=root 
+            group=root 
+            mode=0644
+  with_fileglob:
+    - services/*
+  notify: 
+   - restart icinga2
+
+#### Managed Hosts
+- name: Clear out existing managed service config state
+  file: path=/etc/icinga2/scripts
+        state=absent
+
+- name: Ensure that icinga managed hosts config directory exists
+  file: path=/etc/icinga2/scripts
+        state=directory
+
+- name: Copy Host Definitions
+  template: src={{ item }}
+            dest=/etc/icinga2/scripts
+            owner=root 
+            group=root 
+            mode=0755
+  with_fileglob:
+    - scripts/*
+  notify: 
+   - restart icinga2

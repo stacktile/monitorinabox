@@ -1,0 +1,85 @@
+/*
+ * {{ ansible_managed }}
+ *
+ * Service apply rules.
+ *
+ * The CheckCommand objects `ping4`, `ping6`, etc
+ * are provided by the plugin check command templates.
+ * Check the documentation for details.
+ *
+ * Tip: Use `icinga2 object list --type Service` to
+ * list all service objects after running
+ * configuration validation (`icinga2 daemon -C`).
+ */
+
+apply Service "check-memory" {
+  import "generic-service"
+
+  check_command = "linux_memory"
+
+  assign where (host.vars.os == "Linux" && host.name == NodeName)
+}
+
+
+apply Service "check-reboot-required" {
+  import "generic-service"
+
+  check_command = "linux_reboot_required"
+
+  assign where (host.vars.os == "Linux" && host.name == NodeName)
+}
+
+
+apply Service "ping4" {
+  import "generic-service"
+
+  check_command = "ping4"
+
+  assign where host.address
+}
+
+
+apply Service "ssh" {
+  import "generic-service"
+
+  check_command = "ssh"
+
+  assign where (host.address || host.address6) && host.vars.os == "Linux"
+}
+
+
+apply Service for (http_vhost => config in host.vars.http_vhosts) {
+  import "generic-service"
+
+  check_command = "http"
+
+  vars += config
+}
+
+apply Service for (disk => config in host.vars.disks) {
+  import "generic-service"
+
+  check_command = "disk"
+
+  vars += config
+}
+
+apply Service "icinga" {
+  import "generic-service"
+
+  check_command = "icinga"
+
+  assign where host.name == NodeName
+}
+
+apply Service "load" {
+  import "generic-service"
+
+  check_command = "load"
+
+  /* Example used by the ScheduledDowntime apply rule in `downtimes.conf`. */
+  /* vars.backup_downtime = "02:00-03:00" */
+
+  assign where host.name == NodeName
+
+}

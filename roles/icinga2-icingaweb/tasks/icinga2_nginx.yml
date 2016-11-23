@@ -1,0 +1,98 @@
+---
+# nginx
+
+- name: Smartinclude
+  include: ../../common/tasks/smartinclude.yml
+  tags: always
+
+- name: Ensure that /etc/ssl/private exists
+  file: dest=/etc/ssl/private
+        state=directory
+        owner=root
+        group=root
+        mode=700
+
+- name: Place SSL certificate in /etc/ssl
+  copy: content={{vault_icinga_webserver_ssl_crt}}
+        dest=/etc/ssl/{{inventory_hostname}}.crt
+        owner=root
+        group=root
+        mode=440
+  when: vault_icinga_webserver_ssl_crt is defined
+
+- name: Place SSL private key in /etc/ssl
+  copy: content={{vault_icinga_webserver_ssl_key}}
+        dest=/etc/ssl/{{inventory_hostname}}.key
+        owner=root
+        group=root
+        mode=440
+  when: vault_icinga_webserver_ssl_key is defined
+
+- stat: path=/etc/ssl/certs/ssl-cert-snakeoil.pem
+  register: stat_snakeoil_cert
+
+- stat: path=/etc/ssl/private/ssl-cert-snakeoil.key
+  register: stat_snakeoil_key
+
+- name: Ensure SSL snakeoil certs have been generated
+  shell: |
+    openssl req -x509 -newkey rsa:2048 -nodes -subj "/CN={{ inventory_hostname }}/C=NA/ST=NA/L=NA/O=NA/OU=NA" -keyout /etc/ssl/private/ssl-cert-snakeoil.key -out /etc/ssl/certs/ssl-cert-snakeoil.pem -days 3650
+  when: stat_snakeoil_cert.stat.exists == false or stat_snakeoil_key.stat.exists == false
+
+- stat: path=/etc/ssl/{{ icingaweb_application_fqdn }}.crt
+  register: stat_ssl_crt
+
+- stat: path=/etc/ssl/{{ icingaweb_application_fqdn }}.key
+  register: stat_ssl_key
+
+- name: Place Snakeoil SSL certificate in /etc/ssl
+  file: src=/etc/ssl/certs/ssl-cert-snakeoil.pem
+        dest=/etc/ssl/{{ icingaweb_application_fqdn }}.crt
+        state=link
+  when: stat_ssl_crt.stat.exists == false
+
+- name: Place Snakeoil SSL private key in /etc/ssl
+  file: src=/etc/ssl/private/ssl-cert-snakeoil.key
+        dest=/etc/ssl/{{ icingaweb_application_fqdn }}.key
+        state=link
+  when: stat_ssl_key.stat.exists == false
+
+- name: Add 'www-data' to the nagios group so that the webserver can access the icinga2 command pipe
+  user: name=www-data append=yes groups=nagios
+
+- name: Install grafana nginx include placeholder
+  copy:
+    dest: /etc/nginx/conf.d/grafana.include
+    owner: root
+    group: root
+    mode: 440
+    force: no
+    content: |
+      # ansible managed
+      # This empty file must exist because it is used by
+      # /etc/nginx/sites-available/10-icinga.webserver.conf. The paid version
+      # of Monitoring in a Box (https://solutions.stacktile.io) includes
+      # Grafana configuration that is included here.
+
+- name: Install icingaweb2 nginx configuration
+  template: src=10-icinga.conf.j2
+            dest=/etc/nginx/sites-available/10-icinga.webserver.conf
+  notify:
+    - nginx
+
+- name: Enable icingaweb2 nginx configuration
+  file: src=/etc/nginx/sites-available/10-icinga.webserver.conf
+        dest=/etc/nginx/sites-enabled/10-icinga.webserver.conf
+        state=link
+  notify:
+    - nginx
+
+- name: Install ansible htpasswd dependency for htpasswd
+  package: name=python-passlib state=installed
+
+
+- name: Create htpasswd file for icingaweb basic_auth
+  htpasswd: path={{ icingaweb_service_htaccess_file }}
+            name={{ item.key }}
+            password={{ item.value.password }}
+  with_dict: "{{ icingaweb_service_htaccess_users }}"

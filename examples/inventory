@@ -1,0 +1,18 @@
+[icinga_master_servers]
+
+#Warning: The following ansible inventory entry disables ssh hostkey checking.
+#We disable checking to simplify the illustrative 'getting started' example of
+#how to run our code. Do not disable ssh hostkey checking in production.
+mibmaster.your.company ansible_host=192.168.33.10 ansible_ssh_private_key_file=id_rsa_example__do_not_use_in_production__ ansible_ssh_extra_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+[icinga_satellite_servers]
+
+#Warning: The following ansible inventory entry disables ssh hostkey checking.
+#We disable checking to simplify the illustrative 'getting started' example of
+#how to run our code. Do not disable ssh hostkey checking in production.
+mibsatellite.your.company ansible_host=192.168.33.11 ansible_ssh_private_key_file=id_rsa_example__do_not_use_in_production__ ansible_ssh_extra_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+[rocketchat_servers]
+
+[localhost]
+localhost ansible_python_interpreter="/usr/bin/python" ansible_connection=local

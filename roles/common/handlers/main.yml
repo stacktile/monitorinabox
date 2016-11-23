@@ -1,0 +1,46 @@
+---
+- name: carbon-cache
+  service: name=carbon-cache
+           state=restarted
+           enabled=yes
+
+- name: ferm
+  service: name=ferm
+           state=restarted
+           enabled=yes
+
+- name: grafana
+  service: name=grafana-server
+           state=restarted
+           enabled=yes
+
+- name: graphite-api
+  service: name=graphite-api
+           state=restarted
+           enabled=yes
+
+- name: icinga2
+  service: name=icinga2
+           state=restarted
+           enabled=yes
+
+- name: newaliases
+  command: newaliases
+
+- name: nginx
+  service: name=nginx
+           state=restarted
+           enabled=yes
+
+- name: php-fpm
+  service: name={{ php_fpm_service_name }}
+           state=restarted
+           enabled=yes
+
+- name: sshd
+  service: name={{ sshd_service_name }}
+           state=restarted
+           enabled=yes
+
+- name: systemd
+  command: systemctl daemon-reload

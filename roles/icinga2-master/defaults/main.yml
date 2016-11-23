@@ -1,0 +1,5 @@
+---
+
+icinga_master_fqdn: "{{ groups['icinga_master_servers'][0] }}"
+
+icinga_ssl_csr_subject: "/C=NA/ST=NA/L=NA/O=NA/OU=NA/CN={{ icinga_master_fqdn }}"

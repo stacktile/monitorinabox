@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+
+# icinga
+local   icinga      icinga                            md5
+host    icinga      icinga      127.0.0.1/32          md5
+host    icinga      icinga      ::1/128               md5
+
+# icingaweb
+local   icingaweb      icingaweb                            md5
+host    icingaweb      icingaweb      127.0.0.1/32          md5
+host    icingaweb      icingaweb      ::1/128               md5
+
+# "local" is for Unix domain socket connections only
+local   all         all                               ident
+# IPv4 local connections:
+host    all         all         127.0.0.1/32          ident
+# IPv6 local connections:
+host    all         all         ::1/128               ident
+
+

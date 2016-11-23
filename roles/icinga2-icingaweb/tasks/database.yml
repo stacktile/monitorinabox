@@ -1,0 +1,170 @@
+---
+# Sets up the databases needed for icinga2 and icingaweb2
+
+- name: Smartinclude
+  include: ../../common/tasks/smartinclude.yml
+  tags: always
+
+- name: Install PostgreSQL and psycopg2
+  package: pkg={{ item }}
+           state=latest
+  with_items:
+  - icinga2-ido-pgsql
+  - postgresql
+  - python-psycopg2
+
+- name: Initialize PostgreSQL database if necessary on {{ ansible_os_family }}
+  command: postgresql-setup initdb
+  ignore_errors: yes
+  when: ansible_os_family == 'RedHat'
+
+- name: Start PostgreSQL server
+  service: name=postgresql
+           state=started
+           enabled=yes
+
+- name: Configure pg_hba.conf
+  template: src=pg_hba.conf.j2
+            dest=/etc/postgresql/9.3/main/pg_hba.conf
+  register: config_hba
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '14.04'
+
+- name: Configure pg_hba.conf
+  template: src=pg_hba.conf.j2
+            dest=/etc/postgresql/9.5/main/pg_hba.conf
+  register: config_hba
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '16.04'
+
+- name: Configure pg_hba.conf
+  template: src=pg_hba.conf.j2
+            dest="/var/lib/pgsql/data/pg_hba.conf"
+  register: config_hba
+  when: ansible_os_family == 'RedHat'
+
+- name: Restart postgresql
+  service: name=postgresql
+           state=restarted
+  when: config_hba|changed
+
+- name: Install PostgreSQL client
+  package: pkg={{ postgresql_client_package }}
+           state=latest
+
+################################################################################
+- name: Ensure that /root/passwords directory exists
+  file: path=/root/passwords
+        owner=root
+        group=root
+        mode=0700
+        state=directory
+
+- name: Place icinga db password into /root/passwords
+  copy:
+    dest: /root/passwords/icinga_db_password
+    owner: root
+    group: root
+    mode: 440
+    content: |
+      # ansible managed
+      icinga db pw: "{{ icinga_db_password }}"
+
+
+- name: Place icingaweb db password into /root/passwords
+  copy:
+    dest: /root/passwords/icingaweb_db_password
+    owner: root
+    group: root
+    mode: 440
+    content: |
+      # ansible managed
+      icingaweb db pw: "{{ icingaweb_db_password }}"
+
+
+- name: Place icinga admin user password into /root/passwords
+  copy:
+    dest: /root/passwords/icingaweb_admin_password
+    owner: root
+    group: root
+    mode: 440
+    content: |
+      # ansible managed
+      icingaweb admin user: admin
+      icingaweb admin pw: "{{ icingaweb_admin_password }}"
+
+################################################################################
+- name: Create a Database for Icinga
+  postgresql_db: name={{ icinga_db_name }}
+                 state=present
+  register: icinga_db_result
+  become: yes
+  become_user: postgres
+
+- name: Create Icinga Database User and configure ownership
+  postgresql_user: name={{ icinga_db_user }}
+                   password={{ icinga_db_password }}
+                   state=present
+                   db={{ icinga_db_name }}
+  become: yes
+  become_user: postgres
+
+- name: Import IDO Schema on Icinga Database (only once)
+  command: "psql postgresql://{{ icinga_db_user }}:{{ icinga_db_password }}@localhost:5432/{{ icinga_db_name }} -f /usr/share/icinga2-ido-pgsql/schema/pgsql.sql"
+  when: icinga_db_result.changed == true
+
+- name: Configure Icinga2 Ido pgsql Feature
+  template: src=ido-pgsql.conf.j2
+            dest=/etc/icinga2/features-available/ido-psql.conf
+            owner=nagios
+            group=nagios
+            mode=0640
+
+- name: Enable Icinga2 Ido pgsql Feature
+  command: "icinga2 feature enable ido-psql"
+  register: features_result
+  changed_when: "'for these changes to take effect' in features_result.stdout"
+  notify:
+   - icinga2
+################################################################################
+- name: Create a Database for Icingaweb
+  postgresql_db: name={{ icingaweb_db_name }}
+                 state=present
+  register: icingaweb_db_result
+  become: yes
+  become_user: postgres
+
+- name: Create icingaweb2 Database User and configure ownership
+  postgresql_user: name={{ icingaweb_db_user }}
+                   password={{ icingaweb_db_password }}
+                   db={{ icingaweb_db_name }}
+                   state=present
+  become: yes
+  become_user: postgres
+
+- name: Import IDO Schema on icingaweb2 Database (only once)
+  command: "psql postgresql://{{ icingaweb_db_user }}:{{ icingaweb_db_password }}@localhost:5432/{{ icingaweb_db_name }} -f {{ icingaweb_database_schema }}"
+  when: icingaweb_db_result.changed == true
+
+################################################################################
+#FIXME: This feels really sloppy and wrong. Check how we do it in our own devops repo
+- name: Create password hash for icinga admin user
+  command: /usr/bin/openssl passwd -1 "{{ icingaweb_admin_password }}"
+  register: icinga_admin_password_hash
+
+- name: Write SQL for inserting the admin user to admin.sql
+  copy: content="INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '{{ icinga_admin_password_hash.stdout }}');"
+        dest="{{ postgresql_sql_dir }}/insert_admin.sql"
+
+- name: Insert icingaweb admin password
+  become: yes
+  become_user: postgres
+  shell: /usr/bin/psql -d icingaweb < "{{ postgresql_sql_dir }}/insert_admin.sql"
+
+- name: Write SQL for updating the admin user to admin.sql
+  copy: content="UPDATE icingaweb_user SET password_hash='{{ icinga_admin_password_hash.stdout }}' WHERE name='admin';"
+        dest="{{ postgresql_sql_dir }}/update_admin.sql"
+
+- name: Update icingaweb admin password
+  become: yes
+  become_user: postgres
+  shell: /usr/bin/psql -d icingaweb < "{{ postgresql_sql_dir }}/update_admin.sql"
+

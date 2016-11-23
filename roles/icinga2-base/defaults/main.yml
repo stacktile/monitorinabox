@@ -1,0 +1,8 @@
+---
+# defaults/main.yml: Defaults for icinga2-master
+
+icinga_admin_email: admin@your.company
+
+# FIXME: Get version automatically
+ubuntu_14.04_icinga_pg_hba_conf: "/etc/postgresql/9.3/main/pg_hba.conf"
+ubuntu_16.04_icinga_pg_hba_conf: "/etc/postgresql/9.5/main/pg_hba.conf"

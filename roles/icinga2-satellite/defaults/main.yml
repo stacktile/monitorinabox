@@ -1,0 +1,6 @@
+---
+
+# The first entry in the inventory group will be the icinga master
+icinga_master_fqdn: "{{ groups['icinga_master_servers'][0] }}"
+
+icinga_ssl_csr_subject: "/C=City/ST=State/L=Country/O=Org/OU=Unit/CN={{ icinga_master_fqdn }}"

@@ -1,0 +1,56 @@
+# {{ ansible_managed }}
+#
+#  Configuration file for ferm(1).
+#
+
+table filter {
+    chain INPUT {
+        policy DROP;
+
+        # connection tracking
+        mod state state INVALID DROP;
+        mod state state (ESTABLISHED RELATED) ACCEPT;
+
+        # allow local packet
+        interface lo ACCEPT;
+
+	# respond to ping
+	proto icmp ACCEPT;
+
+	# allow SSH connections
+	proto tcp dport ssh ACCEPT;
+
+	# enable HTTPS access
+	proto tcp dport http ACCEPT;
+	proto tcp dport https ACCEPT;
+
+	# enable icinga API access
+	proto tcp dport 5665 ACCEPT;
+
+    }
+    chain OUTPUT {
+        policy ACCEPT;
+
+        # connection tracking
+        mod state state INVALID DROP;
+        mod state state (ESTABLISHED RELATED) ACCEPT;
+    }
+    chain FORWARD {
+        policy DROP;
+    }
+}
+
+# IPv6:
+domain ip6 {
+    table filter {
+        chain INPUT {
+            policy DROP;
+        }
+        chain OUTPUT {
+            policy DROP;
+        }
+        chain FORWARD {
+            policy DROP;
+        }
+    }
+}

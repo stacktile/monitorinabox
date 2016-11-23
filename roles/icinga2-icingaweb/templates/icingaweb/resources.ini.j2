@@ -1,0 +1,23 @@
+; {{ ansible_managed }}
+
+[icingaweb_db]
+type = "db"
+db = "pgsql"
+host = "localhost"
+port = "5432"
+dbname = "{{ icingaweb_db_name }}"
+username = "{{ icingaweb_db_user }}"
+password = "{{ icingaweb_db_password }}"
+charset = ""
+persistent = "0"
+
+[icinga_ido]
+type = "db"
+db = "pgsql"
+host = "localhost"
+port = "5432"
+dbname = "{{ icinga_db_name }}"
+username = "{{ icinga_db_user }}"
+password = "{{ icinga_db_password }}"
+charset = ""
+persistent = "0"

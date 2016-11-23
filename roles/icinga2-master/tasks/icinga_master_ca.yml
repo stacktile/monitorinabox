@@ -1,0 +1,52 @@
+---
+# Installs the CA and create the ssl certificate of the icinga master node
+
+- name: Install openssl
+  apt: name=openssl state=latest update_cache=yes cache_valid_time=3600
+
+- name: Ensure that icinga ca directory exists
+  file: dest=/var/lib/icinga2/ca
+        state=directory
+        owner=nagios
+        group=nagios
+
+- name: Create Icinga CA certificate and key if they don't exist
+  command: /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -subj "/CN={{ inventory_hostname }}/C=NA/ST=NA/L=NA/O=NA/OU=NA" -keyout /var/lib/icinga2/ca/ca.key -out /var/lib/icinga2/ca/ca.crt -days 3650
+  when: vault_icinga_ca_cert is not defined or vault_icinga_ca_key is not defined
+
+
+- name: Install icinga CA certificate
+  copy: content={{ vault_icinga_ca_cert }}
+        dest=/var/lib/icinga2/ca/ca.crt
+        owner=nagios
+        group=nagios
+        mode=0440
+  when: vault_icinga_ca_cert is defined
+
+- name: Install icinga CA private key
+  copy: content={{ vault_icinga_ca_key }}
+        dest=/var/lib/icinga2/ca/ca.key
+        owner=nagios
+        group=nagios
+        mode=0440
+  when: vault_icinga_ca_cert is defined
+
+- name: Copy ca.crt to /etc/icinga2/pki
+  copy: src=/var/lib/icinga2/ca/ca.crt
+        remote_src=true
+        dest=/etc/icinga2/pki/ca.crt
+        owner=nagios
+        group=nagios
+        mode=0440
+
+- name: Create icinga master private ssl key and CSR
+  command: /usr/bin/openssl req -nodes -newkey rsa:2048 -keyout /etc/icinga2/pki/{{ inventory_hostname }}.key -out /etc/icinga2/pki/{{ inventory_hostname }}.csr -subj "{{ icinga_ssl_csr_subject }}"
+
+- name: Generate icinga master ssl certificate
+  command: /usr/bin/openssl x509 -req -in /etc/icinga2/pki/{{ inventory_hostname }}.csr -CA /var/lib/icinga2/ca/ca.crt -CAkey /var/lib/icinga2/ca/ca.key -CAcreateserial -out /etc/icinga2/pki/{{ inventory_hostname }}.crt -days 365
+#  args:
+#   creates: /etc/icinga2/pki/{{ inventory_hostname }}.crt
+
+- name: Remove the ssl certificate signing request (csr)
+  file: path=/etc/icinga2/pki/{{ inventory_hostname }}.csr
+        state=absent

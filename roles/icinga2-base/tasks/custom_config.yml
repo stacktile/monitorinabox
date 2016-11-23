@@ -1,0 +1,79 @@
+---
+- name: Remove default icinga configuration that conflicts with our custom config
+  file:
+    path=/etc/icinga2/conf.d/{{ item }}
+    state=absent
+  with_items:
+    - apt.conf
+    - services.conf
+    - templates.conf
+    - users.conf
+
+- name: Ensure that custom config directory exists
+  file: dest=/etc/icinga2/conf.d/base.d
+        state=directory
+
+- name: Replace icinga users config with our custom config template
+  template: src=users.conf.j2
+            dest=/etc/icinga2/conf.d/base.d/users.conf
+            owner=root
+            group=root
+            mode=0444
+
+- name: Replace icinga host-template config with our custom config template
+  template: src=templates.conf.j2
+            dest=/etc/icinga2/conf.d/base.d/templates.conf
+            owner=root
+            group=root
+            mode=0444
+
+- name: Install check_linux_memory script into icinga plugins directory
+  template: src={{ item }}.j2
+            dest={{ icinga2_plugin_dir }}/{{ item }}
+            owner=root
+            group=root
+            mode=0755
+  with_items:
+    - check_linux_memory
+    - check_reboot_required
+
+- name: Insert custom commands conf into base.d
+  copy:
+    dest: /etc/icinga2/conf.d/base.d/commands.conf
+    content: |
+
+      object CheckCommand "linux_memory" {
+        import "plugin-check-command"
+
+        //constants.conf -> const PluginDir
+        command = [ PluginDir + "/check_linux_memory" ]
+
+      }
+
+      object CheckCommand "linux_reboot_required" {
+        import "plugin-check-command"
+
+        //constants.conf -> const PluginDir
+        command = [ PluginDir + "/check_reboot_required" ]
+
+      }
+
+- name: Check if custom services conf exists for  {{ inventory_hostname }}
+  local_action: stat path={{ role_path }}/templates/{{ inventory_hostname }}-services.conf.j2
+  register: services_template
+
+- name: Insert {{ inventory_hostname }} custom services conf into base.d
+  template: src={{ inventory_hostname }}-services.conf.j2
+            dest=/etc/icinga2/conf.d/base.d/services.conf
+            owner=root
+            group=root
+            mode=0644
+  when: services_template.stat.exists == true
+
+- name: Insert default custom services conf into base.d
+  template: src=services.conf.j2
+            dest=/etc/icinga2/conf.d/base.d/services.conf
+            owner=root
+            group=root
+            mode=0644
+  when: services_template.stat.exists == false

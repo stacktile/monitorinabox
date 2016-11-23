@@ -1,0 +1,37 @@
+# {{ ansible_managed }}
+
+# General
+set -g default-terminal "screen-256color"
+set -g terminal-overrides "*256col*:colors=256,screen*:colors=256,xterm:colors=256"
+setw -g clock-mode-colour yellow
+setw -g mode-keys vi
+setw -g utf8 on
+set -g prefix C-x
+set -g set-titles on
+set -g status-interval 1
+set -g history-limit 50000
+
+# Notices
+#set bell-action any
+set -g pane-active-border-bg black
+setw -g monitor-activity off
+setw -g window-status-current-bg cyan
+setw -g window-status-current-fg black
+
+# Status
+set -g status-left-length 30
+set -g status-left " #(hostname | cut -f 1 -d .) #S ❯ "
+set -g status-right-length 50
+set -g status-right "#(cat /proc/loadavg | awk '{print $1,$2,$3}') [ %a %y-%m-%d %H:%M:%S ]"
+
+# Keybinds
+bind e split-window -h
+bind ^e split-window
+bind m lock-server
+bind ^x select-pane -t :.+
+bind k confirm-before kill-pane
+
+# Colors
+set -g status-bg black
+set -g status-fg blue
+set -g message-bg red

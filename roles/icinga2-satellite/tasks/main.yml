@@ -1,0 +1,80 @@
+---
+# icinga2-satellite/tasks/main.yml
+#
+- name: Smartinclude
+  include: ../../common/tasks/smartinclude.yml
+  tags: always
+
+- name: Disable icinga2 notifications on satellites
+  file: path=/etc/icinga2/features-enabled/notification.conf
+        state=absent
+  notify:
+    - restart icinga2
+
+- name: Install required packages on Debian
+  apt: name={{ item }} state=latest install_recommends=no update_cache=yes cache_valid_time=3600
+  with_items:
+    - openssl
+  notify:
+    - restart icinga2
+  when: ansible_distribution == 'Debian'
+
+- name: Fetch icinga master certificate from icinga master server to the satellite
+  fetch: src=/etc/icinga2/pki/{{ icinga_master_fqdn }}.crt
+         dest=/tmp
+  delegate_to: "{{ icinga_master_fqdn }}"
+
+- name: Ensure that the icinga2 pki directory exists
+  file: path=/etc/icinga2/pki
+        state=directory
+        owner={{ icinga2_system_user }}
+        group={{ icinga2_system_group }}
+        mode=0755
+
+- name: Copy the icinga master certificate to the satellite as the trusted master
+  copy: src=/tmp/{{ inventory_hostname }}/etc/icinga2/pki/{{ icinga_master_fqdn }}.crt
+        dest=/etc/icinga2/pki/trusted-master.crt
+        owner={{ icinga2_system_user }}
+        group={{ icinga2_system_group }}
+        mode=0644
+
+- debug: msg="icinga2 pki ticket --cn {{ inventory_hostname }} ;"
+
+- name: Obtain the icinga2 pki ticket for {{ inventory_hostname }}
+  command: icinga2 pki ticket --cn {{ inventory_hostname }}
+  register: icinga_pki_ticket
+  delegate_to: "{{ icinga_master_fqdn }}"
+  changed_when: false
+
+- debug: msg="icinga2 node setup --cn {{ inventory_hostname }} --zone {{ inventory_hostname }} --master_host {{ icinga_master_fqdn }} --endpoint {{ icinga_master_fqdn }},{{ icinga_master_fqdn }},5665 --trustedcert /etc/icinga2/pki/trusted-master.crt --ticket {{ icinga_pki_ticket.stdout }} ;"
+
+- name: Setup the icinga2 node via CLI
+  command: icinga2 node setup --cn {{ inventory_hostname }} --zone {{ inventory_hostname }} --master_host {{ icinga_master_fqdn }} --endpoint {{ icinga_master_fqdn }},{{ icinga_master_fqdn }},5665 --trustedcert /etc/icinga2/pki/trusted-master.crt --ticket {{ icinga_pki_ticket.stdout }}
+  notify: restart icinga2
+  register: satellite_setup
+
+- name: restart icinga2 on the satellite node
+  service: name=icinga2 state=restarted
+  tags: icinga-update-config
+
+- name: Wait until the master is aware of the satellite
+  shell: "icinga2 node list | grep Node | awk '{print $2}' | sed \"s/'//g\" | grep {{ inventory_hostname }}"
+  register: result
+  delegate_to: "{{ icinga_master_fqdn }}"
+  until: result.rc == 0
+  retries: 60
+  delay: 1
+
+- name: Update the master
+  command: icinga2 node update-config
+  delegate_to: "{{ icinga_master_fqdn }}"
+  tags: icinga-update-config
+  when: satellite_setup.changed == true
+
+- name: restart icinga2 on the master node
+  service: name=icinga2 state=restarted
+  delegate_to: "{{ icinga_master_fqdn }}"
+  tags: icinga-update-config
+  when: satellite_setup.changed == true
+
+- meta: flush_handlers

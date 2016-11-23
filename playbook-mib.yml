@@ -1,0 +1,75 @@
+---
+# Playbook for installing a base icinga2 and icingaweb2 server
+
+- name: Apply common configuration to icinga servers
+  hosts: icinga_master_servers
+  remote_user: root
+  roles:
+    - common
+  tags:
+    - common
+
+- name: Apply common nginx configuration to icinga servers
+  hosts: icinga_master_servers
+  remote_user: root
+  roles:
+    - common-nginx
+  tags:
+    - common-nginx
+
+- name: install postfix for local mail delivery (via relay) on monitor servers
+  hosts: icinga_master_servers
+  remote_user: root
+  force_handlers: True
+  roles:
+    - postfix_local
+  tags:
+    - postfix_local
+
+- name: Configure icinga2 on all monitor servers
+  hosts: icinga_master_servers, icinga_satellite_servers
+  remote_user: root
+  force_handlers: True
+  roles:
+    - icinga2-base
+  tags:
+    - icinga2-base
+
+- name: Configure icinga2 icingaweb on all monitor servers
+  hosts: icinga_master_servers
+  remote_user: root
+  force_handlers: True
+  vars:
+    icingaweb_application_fqdn: "{{ inventory_hostname }}"
+    grafana_application_fqdn: "{{ inventory_hostname }}"
+  roles:
+    - icinga2-icingaweb
+  tags:
+    - icinga2-icingaweb
+
+- name: Set up all managed monitoring targets
+  hosts: icinga_master_servers
+  remote_user: root
+  force_handlers: True
+  roles:
+    - icinga2-managedconf
+  tags:
+    - icinga2-managedconf
+
+- name: Configure icinga2 to run as master mode on all monitor servers
+  hosts: icinga_master_servers
+  remote_user: root
+  force_handlers: True
+  roles:
+    - icinga2-master
+  tags:
+    - icinga2-master
+
+- name: Configure icinga2 systems as satellites
+  hosts: icinga_satellite_servers
+  remote_user: root
+  force_handlers: True
+  roles:
+    - icinga2-satellite
+  tags:
+    - icinga2-satellite
