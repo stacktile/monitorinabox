@@ -71,8 +71,8 @@
       # ansible managed
       # This empty file must exist because it is used by
       # /etc/nginx/sites-available/10-icinga.webserver.conf. The paid version
-      # of Monitoring in a Box (https://solutions.stacktile.io) includes
-      # Grafana configuration that is included here.
+      # Monitor in a Box Pro (https://solutions.stacktile.io) includes Grafana
+      # configuration that is included here.
 
 - name: Install icingaweb2 nginx configuration
   template: src=10-icinga.conf.j2

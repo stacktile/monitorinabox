@@ -1,4 +1,4 @@
-# Part 1: Monitoring in a Box!
+# Part 1: Monitor in a Box!
 
 ```
     boxboxboxboxbox
@@ -157,7 +157,7 @@ ansible-playbook options: --diff --check
 --check will not make any changes on the hosts
 --diff will display all changes that can be reported back
 
-# Part 3: Finally, Monitoring in a Box into production!
+# Part 3: Finally, Monitor in a Box into production!
 
 ## Altering in Production
 
