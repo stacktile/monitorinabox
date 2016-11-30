@@ -63,31 +63,35 @@ status and data visualization and notifications.
 Installer system: Linux or MacOS
  - To run the virtualized staging example: Vagrant v1.8.7 or newer, Docker
 
-Master & Satellite Systems: Ubuntu 14.04
+Master & Satellite Systems: Ubuntu 14.04 
+Note: we support additional os families/distributions in our paid offering at
+https://solutions.stacktile.io
 
 
 ### "Set up the Left Side"
 
-We'll be working in our examples directory:
+1) Ensure that you have vagrant v1.8.7 or newer installed with the command:
 
-`cd examples`
+`vagrant --version`
 
-1) Install vagrant and create the virtual machines using our Vagrantfile.
+If not, install vagrant and create the virtual machines using our Vagrantfile.
 
-On Debian/Ubuntu, MacOS, CentOS, you'll need to install Vagrant from the
-official source:
+On Debian/Ubuntu, CentOS, MacOS, you'll need to install Vagrant from the
+official source: https://www.vagrantup.com/downloads.html
 
-`Visit https://www.vagrantup.com/downloads.html`
+Let's change into the examples directory and create the VMs:
 
-Create your VMs:
-
-`vagrant up`
+```
+cd examples
+vagrant up
+```
 
 2) Set up the Installer System. You may use our docker image as follows:
 
 `docker run -w /root -h mib-installer -it stacktile/mib-installer`
 
-or alternately (on Debian/Ubuntu), ensure that you have the following packages installed:
+OR alternately ensure that you have the following packages installed:
+(example commands for Debian/Ubuntu systems)
 
 ```
 sudo apt install libssl-dev python-pip virtualenv
@@ -125,14 +129,9 @@ They have also been placed into the /root/passwords directory of the Master serv
 
 `ssh root@192.168.33.10 -o StrictHostKeyChecking=no "cat /root/passwords/icingaweb_admin_password"`
 
---------------------------------------------------------------------------------
-Notice to our Beta Testers: All documentation beyond this point is still
-Work-in-Progress
---------------------------------------------------------------------------------
-
 ### Your first running monitoring setup
 
-- Disable the satellite, (disable network interface). Observe what happens
+- Disable the satellite, (disable network interface). Observe what happens at http://192.168.33.10/
 - Change a check and re-deploy
 
 # Part 2: Taking Monitor in a Box out of its staging environment
@@ -167,6 +166,3 @@ ansible-playbook options: --diff --check
 which host will act as the icinga2 master and icingaweb interface:
 
 `(your favorite editor) ./inventories/mib`
-
-
-
