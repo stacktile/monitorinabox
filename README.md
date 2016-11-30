@@ -1,7 +1,7 @@
 # About This Project
 Monitor in a Box is a set of Ansible roles and supporting tools and code to
 set-up a comprehensive application and infrastrucure monitoring solution based
-on Icinga2, Icingaweb, Graphite, Grafana, Let's Encrypt. 
+on the master-satellite functionalities of Icinga2 and Icingaweb.
 
 We designed Monitor in a box with a focus on:
 
@@ -13,7 +13,10 @@ We designed Monitor in a box with a focus on:
 * Sensible security: confidentiality and authentication of all metrics
   collection in transit 
 
-Additional information on the background of the project can be found at
+
+To support this project and for more information on how to obtain additional
+functionalities such as historical metrics collection using Graphite,
+visualization via Grafana, Let's Encrypt support and more, please visit
 https://solutions.stacktile.io/.
 
 # Part 1: Monitor in a Box!
