@@ -2,5 +2,3 @@
 postgresql_client_package: postgresql-client
 icingaweb_database_schema: /usr/share/icingaweb2/etc/schema/pgsql.schema.sql
 postgresql_sql_dir: /var/lib/postgresql
-ferm_config_file: /etc/ferm/ferm.conf
-

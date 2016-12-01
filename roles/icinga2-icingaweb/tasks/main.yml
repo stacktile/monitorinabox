@@ -63,11 +63,6 @@
   tags:
     - icingaweb_config
 
-- name: Relax firewall for (nginx) icinga
-  template: src=ferm.conf.j2 dest={{ ferm_config_file }}
-  notify:
-   - ferm
-
 # Safety precaution that ensures that all handlers are triggered in the event
 # that a task fails and the handlers are then lost.
 - meta: flush_handlers
