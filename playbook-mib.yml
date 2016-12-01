@@ -1,5 +1,7 @@
 ---
 # Playbook for installing a base icinga2 and icingaweb2 server
+#
+# Usage: ansible-playbook -i examples/inventory playbook-mib.yml
 
 - name: Apply common configuration to icinga servers
   hosts: icinga_master_servers
