@@ -1,5 +1,20 @@
 ---
 # common/tasks/main.yml: Main tasks for common role
+#
+# We created the common role to run on every one of our Debian/Ubuntu systems to
+# provide a consistent environment that includes:
+#
+# - Unintended upgrades: Automated system security updates
+# - Firewall input restricted to IPv4 tcp port 22 by default
+# - Etckeeper: Revision control for the entire /etc directory
+# - SSHd hardening
+# - Hostname and hosts file configuration
+# - Common system software packages
+# - Provides handlers that are imported from other roles
+#
+# The common role is required for the Icinga master instance(s) e.g. due to the
+# dependency of the Icinga master to have a firewall installed on the system. The
+# common role is optional for the satellite instances.
 
 - name: Include {{ ansible_distribution }} specific vars
   include_vars: "{{ item }}"

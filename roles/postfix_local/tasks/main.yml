@@ -1,4 +1,7 @@
 ---
+# This role provides a starting-point to enable mail delivery that Icinga
+# can use to send out notification emails. It is also used by other system
+# services which send emails, such as unattended upgrades.
 
 - name: Include {{ ansible_os_family }} specific common packages
   include_vars: "../vars/{{ ansible_os_family }}.yml"

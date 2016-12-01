@@ -1,5 +1,14 @@
 ---
 # icinga2-base/tasks/main.yml: Installs the icinga2 components shared across all icinga2 installations
+#
+# This role provides a minimal common set of Icinga set-up and configuration that
+# can be shared across any intended use of Icinga. The purpose of this role is to
+# promote code reuse across the different ways Icinga2 will be used.
+#
+# This role is also the place to specify any custom Icinga checks, to be applied
+# across all Icinga instances: For example, we use this role to install the check
+# "check_linux_memory" which is not included within the standard Icinga checks.
+# These custom checks are defined in the included file custom_config.yml
 
 - name: Include {{ ansible_distribution }} specific vars
   include_vars: "{{ item }}"

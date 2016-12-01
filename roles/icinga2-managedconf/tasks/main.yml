@@ -1,6 +1,21 @@
 ---
 
-# Configures an icinga master
+# This role is similar in purpose to the custom_config.yml included in the
+# icinga2_base role. It provides a way to specify checks to be run, however
+# unlike the icinga2_base role, these checks are only run on a sub-set of Icinga
+# instances as defined in the Ansible inventory.
+#
+# This role can be used to express the following behavior: Check some condition
+# (as defined by the checks in this role) from some specific vantage point(s) (as
+# defined by the hosts on which this role is applied).
+#
+# We intend this role as it is provided to be run on the Icinga master, and we
+# use them to collect metrics independently from those metrics reported by
+# satellites. For example, this role could be used to install a check on the
+# master to ensure that that from the master's vantage point, port 443 is open on
+# some arbitrary server of interest.
+#
+# This role may be run against any Icinga instance (master or satellite).
 
 #### Managed Hosts
 - name: Clear out existing managed hosts config state

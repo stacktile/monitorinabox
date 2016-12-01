@@ -1,5 +1,16 @@
 ---
 # icinga2-master/tasks/main.yml
+#
+# This role transforms an icinga2_base system into one that implements
+# the Icinga master functionalities. Namely listening for satellites to connect
+# and providing a collection point for the metrics reported from satellites. This
+# role creates the Icinga public key infrastructure including all keys and
+# certificates that ensure encrypted and authenticated communication between the
+# master and all satellites. 
+#
+# We intend for the Icinga master to be installed on its own dedicated system
+# because it change system-wide configuration that will conflict with other
+# services e.g. firewall rules, running on the same host.
 
 - name: Include {{ ansible_distribution }} specific vars
   include_vars: "{{ item }}"

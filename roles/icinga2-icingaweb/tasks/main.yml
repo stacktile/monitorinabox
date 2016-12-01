@@ -1,5 +1,12 @@
 ---
 # icinga2-icingaweb/tasks/main.yml
+#
+# This role sets up the web interface for Icinga. It also creates the necessary
+# Postgres database and Icingaweb users in that database. It also provides the
+# Nginx webserver configuration for icinga.
+#
+# In principle, this role may be run on any icinga2_base instance, however we
+# only choose to install it on the icinga2 master.
 
 - name: Smartinclude
   include: ../../common/tasks/smartinclude.yml

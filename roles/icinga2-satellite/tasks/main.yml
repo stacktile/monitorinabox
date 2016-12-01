@@ -1,6 +1,12 @@
 ---
 # icinga2-satellite/tasks/main.yml
 #
+# This role transforms an icinga2_base instance into one that implements the
+# Icinga satellite functionalities. Each satellite instance reports the checks
+# that it performs back to the icinga master instance.
+#
+# This role also users the public key infrastructure created for the Icinga master.
+
 - name: Smartinclude
   include: ../../common/tasks/smartinclude.yml
   tags: always

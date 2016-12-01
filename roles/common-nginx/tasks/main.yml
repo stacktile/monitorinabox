@@ -1,6 +1,14 @@
 ---
-# This playbook contains common plays that will be run on all nodes which have
-# nginx installed.
+# This role provides reusable secure nginx configuration which can be applied
+# everywhere nginx is used. It configures secure SSL cipher suites and protocols
+# and enables HSTS with a (by default) 5 minute timeout (which should be increased
+# in a production setting.)
+#
+# In the event that existing certificates are not provided to this role, snakeoil
+# certificates will be created and symlinked into /etc/ssl to ensure that all
+# ssl-depndent services come up correctly, and that production certificates can
+# be swapped in (e.g. with letsencrypt) without the need to change any other
+# system or service configuration.
 
 - name: Include {{ ansible_os_family }} specific vars
   include_vars: "{{ item }}"
