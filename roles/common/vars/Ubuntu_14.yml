@@ -3,7 +3,7 @@ common_packages:
   - bash-completion
   - dstat
   - etckeeper
-  - ferm
+  - firewalld
   - git
   - htop
   - iftop
@@ -25,7 +25,5 @@ common_packages:
   - vim
   - zsh
   - zsh-lovers
-
-ferm_config_dest: /etc/ferm/ferm.conf
 
 sshd_service_name: ssh

@@ -63,12 +63,6 @@
   package: name=epel-release state=installed
   when: ansible_os_family == "RedHat"
 
-- stat: path=/etc/ferm/ferm.conf
-  register: has_ferm
-  changed_when: false
-
-- debug: var=has_ferm
-
 - name: Install Common Packages
   environment:
     DEBIAN_FRONTEND: noninteractive
@@ -103,13 +97,11 @@
   command: /usr/bin/etckeeper init
   ignore_errors: yes
 
-- name: Configure Ferm
-  template: src=ferm.conf.j2 dest=/etc/ferm/ferm.conf
-  notify: ferm
-  when: force_fermconfig is defined and force_fermconfig == true or has_ferm.stat.exists == false
-
 - name: Enable Unattended Upgrades
   template: src=unattended_upgrades.conf.j2 dest=/etc/apt/apt.conf.d/10periodic
+
+- name: Ensure that firewalld is running
+  service: name=firewalld state=started enabled=yes
 
 # Ensures that all handlers are triggered
 - meta: flush_handlers

@@ -41,4 +41,7 @@
 - name: restart icinga2 on the master node
   service: name=icinga2 state=restarted
 
+- name: Open icinga2 cluster API port
+  firewalld: port=5665/tcp permanent=true state=enabled immediate=true
+
 - meta: flush_handlers

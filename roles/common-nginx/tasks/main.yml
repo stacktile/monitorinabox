@@ -113,9 +113,11 @@
         state=link
   when: ssl_key is undefined
 
-- name: Configure Ferm
-  template: src=ferm.conf.j2 dest=/etc/ferm/ferm.conf
-  notify: ferm
+- name: Open http port
+  firewalld: service=http permanent=true state=enabled immediate=true
+
+- name: Open https port
+  firewalld: service=https permanent=true state=enabled immediate=true
 
 
 # Safety precaution that ensures that all handlers are triggered in the event

@@ -4,11 +4,6 @@
            state=restarted
            enabled=yes
 
-- name: ferm
-  service: name=ferm
-           state=restarted
-           enabled=yes
-
 - name: grafana
   service: name=grafana-server
            state=restarted
