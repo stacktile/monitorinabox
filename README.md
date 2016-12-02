@@ -152,8 +152,34 @@ They have also been placed into the /root/passwords directory of the Master serv
 
 ### Your first running monitoring setup
 
-- Disable the satellite, (disable network interface). Observe what happens at http://192.168.33.10/
-- Change a check and re-deploy
+Now that we have our example monitoring system up and running, let's perform a
+few simple experiments to demonstrate how everything works together. As we run
+these experiments, keep the icingaweb dashboard running in your browser at
+http://192.168.33.10/
+
+1) We will consume all free filesystem space on the satellite and observe the
+reported changes for the metric for "disk space". Run the following command
+from your installer system to temporarily create, and then remove a large file
+"zero.txt" on the satellite system:
+
+`ssh root@192.168.33.11 -o StrictHostKeyChecking=no "cat /dev/null > zero.txt; sleep 120; rm zero.txt"`
+
+You should observe service warnings displayed in the browser for the "disk"
+service belonging to the Zone "mib-satellite". After approximately 2 minutes,
+the large file should be removed, and the status should return to "OK" for the
+"disk" service.
+
+
+
+2) Next, we will disable Disable the satellite entirely. From the installer system, run the following command to shut down your satellite system.
+
+`ssh root@192.168.33.11 -o StrictHostKeyChecking=no "shutdown now"`
+
+You should observe  Zone "mib-satellite". After approximately 2 minutes, the large
+file should be removed, and the status should return to "OK" for the "disk"
+service.
+
+
 
 # Part 2: Taking Monitor in a Box out of its staging environment
 
@@ -163,7 +189,7 @@ They have also been placed into the /root/passwords directory of the Master serv
 
 - External Dependencies
  - DNS
- - Firewally and open ports
+ - Firewall and open ports
  - Mailserver
  - Meta-monitoring
 
