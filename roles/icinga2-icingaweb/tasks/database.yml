@@ -5,6 +5,10 @@
   include: ../../common/tasks/smartinclude.yml
   tags: always
 
+- name: Configure SELinux to permit nginx to connect to the database
+  seboolean: name=httpd_can_network_connect_db state=yes persistent=yes
+  when: ansible_os_family == 'RedHat'
+
 - name: Install PostgreSQL and psycopg2
   package: pkg={{ item }}
            state=latest
@@ -113,13 +117,15 @@
 
 - name: Configure Icinga2 Ido pgsql Feature
   template: src=ido-pgsql.conf.j2
-            dest=/etc/icinga2/features-available/ido-psql.conf
-            owner=nagios
-            group=nagios
+            dest=/etc/icinga2/features-available/ido-pgsql.conf
+            owner={{ icinga2_system_user }}
+            group={{ icinga2_system_group }}
             mode=0640
+  notify:
+   - icinga2
 
 - name: Enable Icinga2 Ido pgsql Feature
-  command: "icinga2 feature enable ido-psql"
+  command: "icinga2 feature enable ido-pgsql"
   register: features_result
   changed_when: "'for these changes to take effect' in features_result.stdout"
   notify:

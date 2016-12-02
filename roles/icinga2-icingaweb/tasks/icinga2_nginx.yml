@@ -58,7 +58,7 @@
   when: stat_ssl_key.stat.exists == false
 
 - name: Add 'www-data' to the nagios group so that the webserver can access the icinga2 command pipe
-  user: name=www-data append=yes groups=nagios
+  user: name=www-data append=yes groups={{ icinga2_system_group }}
 
 - name: Install grafana nginx include placeholder
   copy:

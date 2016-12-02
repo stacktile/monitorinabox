@@ -2,13 +2,13 @@
 # Installs the CA and create the ssl certificate of the icinga master node
 
 - name: Install openssl
-  apt: name=openssl state=latest update_cache=yes cache_valid_time=3600
+  package: name=openssl state=latest
 
 - name: Ensure that icinga ca directory exists
   file: dest=/var/lib/icinga2/ca
         state=directory
-        owner=nagios
-        group=nagios
+        owner={{ icinga2_system_user }}
+        group={{ icinga2_system_group }}
 
 - name: Create Icinga CA certificate and key if they don't exist
   command: /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -subj "/CN={{ inventory_hostname }}/C=NA/ST=NA/L=NA/O=NA/OU=NA" -keyout /var/lib/icinga2/ca/ca.key -out /var/lib/icinga2/ca/ca.crt -days 3650
@@ -18,25 +18,32 @@
 - name: Install icinga CA certificate
   copy: content={{ vault_icinga_ca_cert }}
         dest=/var/lib/icinga2/ca/ca.crt
-        owner=nagios
-        group=nagios
+        owner={{ icinga2_system_user }}
+        group={{ icinga2_system_group }}
         mode=0440
   when: vault_icinga_ca_cert is defined
 
 - name: Install icinga CA private key
   copy: content={{ vault_icinga_ca_key }}
         dest=/var/lib/icinga2/ca/ca.key
-        owner=nagios
-        group=nagios
+        owner={{ icinga2_system_user }}
+        group={{ icinga2_system_group }}
         mode=0440
   when: vault_icinga_ca_cert is defined
+
+- name: Ensure that /etc/icinga2/pki exist
+  file: path=/etc/icinga2/pki
+        state=directory
+        owner={{ icinga2_system_user }}
+        group={{ icinga2_system_group }}
+        mode=0750
 
 - name: Copy ca.crt to /etc/icinga2/pki
   copy: src=/var/lib/icinga2/ca/ca.crt
         remote_src=true
         dest=/etc/icinga2/pki/ca.crt
-        owner=nagios
-        group=nagios
+        owner={{ icinga2_system_user }}
+        group={{ icinga2_system_group }}
         mode=0440
 
 - name: Create icinga master private ssl key and CSR

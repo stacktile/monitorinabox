@@ -1,7 +1,7 @@
 ---
 # Configures icinga2
 
-- name: Smartinclude 
+- name: Smartinclude
   include: ../../common/tasks/smartinclude.yml
   tags: always
 

@@ -22,3 +22,5 @@ php_fpm_service_name: php5-fpm
 
 php_fpm_socket_path: /var/run/php5-fpm.sock
 
+icinga2_system_user: nagios
+icinga2_system_group: "{{ icinga2_system_user }}"
