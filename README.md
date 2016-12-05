@@ -196,8 +196,19 @@ failing checks for "mibsatellite.your.company" and
 
 
 # Part 2: Taking Monitor in a Box out of its staging environment
+In part 2, we will explain how to begin modifying MIB to work with your
+existing infrastructure. Our goal is to provide a top-down explanation for how
+to begin modifying our code to fit your specific needs. We do not intend to
+fully replace the role of official ansible and Icinga2 project documentation.
 
-## Ansible, Roles, and our Playbook.
+## Ansible, Inventory, Roles, and our Playbook.
+For those unfamiliar with Ansible configuration management, 
+
+The inventory is a specification for which hosts are to be configured by
+Ansible. We provide an inventory file in `inventories/mib` where you can add
+your master and satellite hosts. For each host added to the inventory, we
+expect that the installation system has SSH access as root.
+
 
 - Ansible and the Role overview
 
