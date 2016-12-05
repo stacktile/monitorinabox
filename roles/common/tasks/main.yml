@@ -101,6 +101,18 @@
   template: src=unattended_upgrades.conf.j2 dest=/etc/apt/apt.conf.d/10periodic
   when: ansible_distribution == 'Ubuntu'
 
+- name: Copy firewalld python 2 bindings package to remote
+  copy: src=python-firewalld_0.1-0.deb
+        dest=/tmp/python-firewalld_0.1-0.deb
+        owner=root
+        group=root
+        mode=600
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '16.04'
+
+- name: Install firewalld python 2 bindings on Ubuntu 16.04
+  apt: deb=/tmp/python-firewalld_0.1-0.deb
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '16.04'
+
 - name: Ensure that firewalld is running
   service: name=firewalld state=started enabled=yes
 
