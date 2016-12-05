@@ -140,7 +140,8 @@ the show.
 
 4) Point your browser to `http://192.168.33.10/` (Note that you'll see SSL
 warnings because we haven't yet reached the step where we create legitimate SSL
-certificates. This comes in part 2)
+certificates. If you purchased Monitor in a Box Pro, we will address this with
+Let's Encrypt in part 2)
 
 The credentials for all the services that we've just set up can be found in ../credentials/ :
 
@@ -157,7 +158,21 @@ few simple experiments to demonstrate how everything works together. As we run
 these experiments, keep the icingaweb dashboard running in your browser at
 http://192.168.33.10/
 
-1) We will consume all free filesystem space on the satellite and observe the
+1) Let's begin by examining the host checks presented at
+https://192.168.33.10/monitoring/list/hosts. You should observe the following
+three entries that were created for you by MIB.
+
+- mibmaster.your.company
+  - A ping check of the master that is conducted by the master on itself over
+    the loopback network interface.
+- mibsatellite.your.company
+  - A ping check of the satellite that is conducted by the satellite on itself
+    over the loopback network interface, the result of which is reported over
+    the secure channel to the master.
+- mibsatellite.your.company from mibmaster.your.company
+  - A ping check of the satellite that is conducted over the network from the master
+
+2) We will consume all free filesystem space on the satellite and observe the
 reported changes for the metric for "disk space". Run the following command
 from your installer system to temporarily create, and then remove a large file
 "zero.txt" on the satellite system:
@@ -165,20 +180,19 @@ from your installer system to temporarily create, and then remove a large file
 `ssh root@192.168.33.11 -o StrictHostKeyChecking=no "cat /dev/null > zero.txt; sleep 120; rm zero.txt"`
 
 You should observe service warnings displayed in the browser for the "disk"
-service belonging to the Zone "mib-satellite". After approximately 2 minutes,
+service belonging to the Zone "mibsatellite.your.company". After approximately 2 minutes,
 the large file should be removed, and the status should return to "OK" for the
 "disk" service.
 
-
-
-2) Next, we will disable Disable the satellite entirely. From the installer system, run the following command to shut down your satellite system.
+3) Next, we will disable Disable the satellite entirely. From the installer
+system, run the following command to shut down your satellite system.
 
 `ssh root@192.168.33.11 -o StrictHostKeyChecking=no "shutdown now"`
 
-You should observe  Zone "mib-satellite". After approximately 2 minutes, the large
-file should be removed, and the status should return to "OK" for the "disk"
-service.
-
+Navigate your browser to https://192.168.33.10/monitoring/list/hosts.
+Within 5 minutes (the default zone check interval), you should observe two
+failing checks for "mibsatellite.your.company" and
+"mibsatellite.your.company from mibmaster.your.company".
 
 
 # Part 2: Taking Monitor in a Box out of its staging environment
