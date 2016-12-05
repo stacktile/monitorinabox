@@ -5,6 +5,10 @@
   include: ../../common/tasks/smartinclude.yml
   tags: always
 
+- name: Install seboolean module dependency
+  package: pkg=libsemanage-python state=latest
+  when: ansible_os_family == 'RedHat'
+
 - name: Configure SELinux to permit nginx to connect to the database
   seboolean: name=httpd_can_network_connect_db state=yes persistent=yes
   when: ansible_os_family == 'RedHat'
