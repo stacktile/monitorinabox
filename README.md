@@ -197,61 +197,96 @@ failing checks for "mibsatellite.your.company" and
 
 # Part 2: Taking Monitor in a Box out of its staging environment
 In part 2, we will explain how to begin modifying MIB to work with your
-existing infrastructure. Our goal is to provide a top-down explanation for how
-to begin modifying our code to fit your specific needs. We do not intend to
+existing infrastructure. While our goal is to provide a top-down explanation for how
+to begin modifying our code to fit your specific needs, we do not intend to
 fully replace the role of official ansible and Icinga2 project documentation.
 
 ## Ansible, Inventory, Roles, and our Playbook.
-For those unfamiliar with Ansible configuration management, 
+For those unfamiliar with Ansible configuration management, the key concepts to
+understand before making any changes to our code are inventory, roles and our
+playbook.
 
 The inventory is a specification for which hosts are to be configured by
-Ansible. We provide an inventory file in `inventories/mib` where you can add
-your master and satellite hosts. For each host added to the inventory, we
-expect that the installation system has SSH access as root.
+Ansible. We provide an inventory file in `inventories/mib` which provides a
+starting point for you. This is where you can add entries for your own master
+and satellite hosts. For each host added to the inventory, we expect that the
+installation system has SSH access to that host as the root user. For more
+details, see http://docs.ansible.com/ansible/intro_inventory.html.
 
+Once your inventory file is customized, you can begin to modify the roles we
+provide. Ansible roles are functional units of configuration management that
+can combined and reused. Monitor in a Box is implemented as a collection of
+the following roles that reside as directories in the `roles/` directory:
 
-- Ansible and the Role overview
-# Roles
-##common
+### common
 We created the common role to run on every one of our Debian/Ubuntu systems to
 provide a consistent environment.
 
-## common-nginx
+### common-nginx
 This role provides reusable secure nginx configuration which can be applied
 everywhere nginx is used.
 
-## icinga2-base
+### icinga2-base
 This role provides a minimal common set of Icinga set-up and configuration that
 can be shared across any intended use of Icinga.
 
-## icinga2-icingaweb
+### icinga2-icingaweb
 This role sets up the web interface for Icinga.
 
-## icinga2-managedconf
+### icinga2-managedconf
 This role is similar in purpose to the custom_config.yml included in the
 icinga2-base role. It provides a way to specify checks to be run, however
 unlike the icinga2-base role, these checks are only run on a sub-set of Icinga
 instances as defined in the Ansible inventory.
 
-## icinga2-master
+### icinga2-master
 This role transforms an icinga2-base system into one that implements the Icinga
 master functionalities.
 
-## icinga2-satellite
+### icinga2-satellite
 This role transforms an icinga2-base instance into one that implements the
 Icinga satellite functionalities.
 
-## postfix_local
+### postfix_local
 This role provides a starting-point to enable mail delivery that Icinga can use
 to send out notification emails.
 
-- External Dependencies
- - DNS
- - Firewall and open ports
- - Mailserver
- - Meta-monitoring
+The entry point for each one of these roles is the `tasks/main.yml` file within
+each directory. Further documentation on each of our roles is provided in the
+header of these files. The MIB Pro version includes additional roles for Let's
+Encrypt and Grafana, whose files are also documented similarly in the header.
+For more information on Ansible roles, see
+http://docs.ansible.com/ansible/playbooks_roles.html#roles.
 
-## Adapting the Ansible inventory
+Finally, we provide a playbook which invokes each of the roles described above.
+We provide the playbook file `playbook-mib.yml` which, when combined with the
+inventory (as you invoked in part 1), provides the entrypoint for Monitor in a
+Box.
+
+## External Dependencies
+Now that we have covered the highest level overview of the contents of Monitor
+in a Box, we will ever so briefly detail the external dependencies required to
+put your monitoring system into production.
+
+### DNS
+It is beyond the scope of our solution to detail exactly how DNS must be
+configured, but at a bare minimum the icinga master server should have a DNS
+entry so that a browser-accepted, valid SSL certificate may be obtained.
+
+### Firewall and open ports
+The necessary and required open tcp ports are illustrated in figure 1, above.
+Please ensure that if your servers are subject to 3rd party firewalls or
+security groups (e.g. from a cloud provider), that the illustrated ports are
+open in accordance. 
+
+### Mailserver and notifications
+Your icinga master server must be able to send mail if you intend to receive
+notifications via email. Icinga provides extreme reconfigurability with respect
+to how, when and to whom notifications are sent. We provide a very basic
+starting point: One admin user with the email address defined in
+`roles/icinga2-base/defaults/main.yml` as `icinga_admin_email`. For more
+information, see
+https://docs.icinga.com/icinga2/latest/doc/module/icinga2/toc#!/icinga2/latest/doc/module/icinga2/chapter/monitoring-basics#notifications.
 
 ## Some Ansible Best Practices
 
@@ -259,15 +294,4 @@ Always test playbooks before running on production inventory by using the
 ansible-playbook options: --diff --check
 
 --check will not make any changes on the hosts
---diff will display all changes that can be reported back
-
-# Part 3: Finally, Monitor in a Box into production!
-
-## Altering in Production
-
-1) Create a production "Master" virtual machine: Ensure that it has a public ip address
-
-2) Edit the ansible inventory to specify which hosts will be monitored and
-which host will act as the icinga2 master and icingaweb interface:
-
-`(your favorite editor) ./inventories/mib`
+--diff will display all changes to files in a unified diff format
