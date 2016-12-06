@@ -294,4 +294,5 @@ Always test playbooks before running on production inventory by using the
 ansible-playbook options: --diff --check
 
 --check will not make any changes on the hosts
+
 --diff will display all changes to files in a unified diff format
