@@ -211,6 +211,39 @@ expect that the installation system has SSH access as root.
 
 
 - Ansible and the Role overview
+# Roles
+##common
+We created the common role to run on every one of our Debian/Ubuntu systems to
+provide a consistent environment.
+
+## common-nginx
+This role provides reusable secure nginx configuration which can be applied
+everywhere nginx is used.
+
+## icinga2-base
+This role provides a minimal common set of Icinga set-up and configuration that
+can be shared across any intended use of Icinga.
+
+## icinga2-icingaweb
+This role sets up the web interface for Icinga.
+
+## icinga2-managedconf
+This role is similar in purpose to the custom_config.yml included in the
+icinga2-base role. It provides a way to specify checks to be run, however
+unlike the icinga2-base role, these checks are only run on a sub-set of Icinga
+instances as defined in the Ansible inventory.
+
+## icinga2-master
+This role transforms an icinga2-base system into one that implements the Icinga
+master functionalities.
+
+## icinga2-satellite
+This role transforms an icinga2-base instance into one that implements the
+Icinga satellite functionalities.
+
+## postfix_local
+This role provides a starting-point to enable mail delivery that Icinga can use
+to send out notification emails.
 
 - External Dependencies
  - DNS
