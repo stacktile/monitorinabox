@@ -70,33 +70,17 @@
   with_items: "{{ common_packages }}"
 
 
-#################  Optional Nice-to-Haves  #####################################
-- name: Change root shell to zsh
-  user: name=root shell=/usr/bin/zsh
-
-- name: Configure zshrc for root user
-  template: src=zshrc.j2 dest=/root/.zshrc
-
-- name: Configure tmux for root user
-  action: template src=tmux.conf.j2 dest=/root/.tmux.conf
-
-- name: Remove the default aws/openstack ubuntu user
-  user: name=ubuntu state=absent remove=yes
-  async: 15
-  poll: 0
-  ignore_errors: yes
-
 - name: Configure etckeeper
   action: template src=etckeeper.conf.j2 dest=/etc/etckeeper/etckeeper.conf
 
 - name: Create gitconfig for root user so that etckeeper can commit
   template: src=gitconfig.j2 dest=/root/.gitconfig
 
-# This command should bail out as soon as it detects an initialized etckeeper.
 - name: Make etckeeper initial commit if not already initialized
   command: /usr/bin/etckeeper init
   ignore_errors: yes
 
+  # At the moment, only Ubuntu will receive unattended upgrades, not CentOS or Debian
 - name: Enable Unattended Upgrades
   template: src=unattended_upgrades.conf.j2 dest=/etc/apt/apt.conf.d/10periodic
   when: ansible_distribution == 'Ubuntu'
