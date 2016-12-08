@@ -5,7 +5,7 @@ on the master-satellite functionalities of Icinga2 and Icingaweb.
 
 We designed Monitor in a box with a focus on:
 
-* Simplicity to get started: A virtualized staging envirionment with
+* Simplicity to get started: A virtualized staging environment with
   one-command setup to clearly illustrate how all the components work together.
 * Supporting dynamic cloud-based infrastructure
 * Historical time-series based metrics collection with support for queries and
