@@ -1,6 +1,6 @@
 # About This Project
 Monitor in a Box is a set of Ansible roles and supporting tools and code to
-set-up a comprehensive application and infrastrucure monitoring solution based
+set-up a comprehensive application and infrastructure monitoring solution based
 on the master-satellite functionalities of Icinga2 and Icingaweb.
 
 We designed Monitor in a box with a focus on:
